@@ -513,6 +513,7 @@ html, body {
     color: var(--text3);
     margin-top: 4px;
 }
+.bar-muted { opacity: 0.4; }
 .bar-value {
     font-size: 9px;
     color: var(--text2);

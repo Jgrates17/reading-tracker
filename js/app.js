@@ -131,6 +131,12 @@ const App = {
             this.statPeriod = btn.dataset.period;
             this.render();
         });
+        el.querySelector('#year-bar')?.addEventListener('click', e => {
+            const btn = e.target.closest('button[data-year]');
+            if (!btn) return;
+            StatsView._selectedYear = parseInt(btn.dataset.year);
+            this.render();
+        });
     },
 
     // ── Modal ──
@@ -144,13 +150,14 @@ const App = {
 
         const sheet = overlay.querySelector('.modal-sheet');
 
-        // Close on overlay tap
         overlay.addEventListener('click', e => {
             if (e.target === overlay) this._closeModal();
         });
 
         if (type === 'import') {
             this._renderImportModal(sheet);
+        } else if (type === 'add') {
+            this._renderSearchModal(sheet);
         } else {
             this._renderFormModal(sheet, type, book);
         }
@@ -193,6 +200,197 @@ const App = {
                 this.currentBookId = null;
                 this._closeModal();
             }
+        });
+    },
+
+    _renderSearchModal(sheet) {
+        let searchTimer = null;
+        let selectedBook = null;
+
+        sheet.innerHTML = `
+            <div class="modal-handle"></div>
+            <div class="nav-bar">
+                <button class="nav-btn" id="search-cancel">Cancel</button>
+                <span class="nav-title">Add Book</span>
+                <span></span>
+            </div>
+            <div class="search-bar" style="padding-top:8px">
+                <input type="search" id="book-search" placeholder="Search by title or author..." autocomplete="off" autofocus>
+            </div>
+            <div id="search-results" style="padding:0 16px">
+                <div style="text-align:center;padding:40px 16px;color:var(--text2)">
+                    <div style="font-size:36px;margin-bottom:12px">🔍</div>
+                    <p>Search for a book to add it to your library.</p>
+                </div>
+            </div>
+            <div id="search-add-form" style="display:none"></div>
+        `;
+
+        sheet.querySelector('#search-cancel').addEventListener('click', () => this._closeModal());
+
+        const searchInput = sheet.querySelector('#book-search');
+        const resultsDiv = sheet.querySelector('#search-results');
+        const formDiv = sheet.querySelector('#search-add-form');
+
+        searchInput.addEventListener('input', () => {
+            clearTimeout(searchTimer);
+            const q = searchInput.value.trim();
+            if (q.length < 2) {
+                resultsDiv.innerHTML = `<div style="text-align:center;padding:40px 16px;color:var(--text2)">
+                    <div style="font-size:36px;margin-bottom:12px">🔍</div>
+                    <p>Search for a book to add it to your library.</p>
+                </div>`;
+                return;
+            }
+            resultsDiv.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text2)">Searching...</div>`;
+            searchTimer = setTimeout(() => this._searchBooks(q, resultsDiv, formDiv, sheet), 400);
+        });
+    },
+
+    async _searchBooks(query, resultsDiv, formDiv, sheet) {
+        try {
+            const resp = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=10`);
+            if (!resp.ok) throw new Error('API error');
+            const data = await resp.json();
+
+            if (!data.items || data.items.length === 0) {
+                resultsDiv.innerHTML = `<div style="text-align:center;padding:30px;color:var(--text2)">
+                    <p>No books found. Try a different search.</p>
+                </div>`;
+                return;
+            }
+
+            resultsDiv.innerHTML = `<div class="card-group">${data.items.map(item => {
+                const v = item.volumeInfo || {};
+                const thumb = v.imageLinks?.smallThumbnail?.replace('http://', 'https://') || '';
+                const authors = (v.authors || []).join(', ');
+                const year = v.publishedDate ? v.publishedDate.substring(0, 4) : '';
+                return `
+                    <div class="book-row search-result-row" data-gid="${item.id}" role="button" tabindex="0">
+                        <div class="book-icon ${thumb ? 'has-cover' : ''}" style="width:44px;height:64px">
+                            ${thumb ? `<img src="${thumb}" alt="Cover" loading="lazy">` : '📖'}
+                        </div>
+                        <div class="book-info">
+                            <div class="book-title">${Views._esc(v.title || '')}</div>
+                            <div class="book-author">${Views._esc(authors)}${year ? ` · ${year}` : ''}</div>
+                            <div style="font-size:11px;color:var(--text3);margin-top:2px">${v.pageCount ? v.pageCount + ' pages' : ''} ${Views._esc(v.publisher || '')}</div>
+                        </div>
+                        <span class="chevron">›</span>
+                    </div>
+                `;
+            }).join('')}</div>`;
+
+            resultsDiv.querySelectorAll('.search-result-row').forEach(row => {
+                row.addEventListener('click', () => {
+                    const gid = row.dataset.gid;
+                    const item = data.items.find(i => i.id === gid);
+                    if (item) this._showAddForm(item, resultsDiv, formDiv, sheet);
+                });
+            });
+        } catch {
+            resultsDiv.innerHTML = `<div style="text-align:center;padding:30px;color:var(--red)">
+                <p>Search failed. Check your connection and try again.</p>
+            </div>`;
+        }
+    },
+
+    _showAddForm(item, resultsDiv, formDiv, sheet) {
+        const v = item.volumeInfo || {};
+        const authors = (v.authors || []).join(', ');
+        const thumb = v.imageLinks?.thumbnail?.replace('http://', 'https://') || '';
+        const isbn = (v.industryIdentifiers || []).find(i => i.type === 'ISBN_13')?.identifier || '';
+        const subjects = (v.categories || []).join('; ');
+
+        resultsDiv.style.display = 'none';
+        sheet.querySelector('.search-bar').style.display = 'none';
+        formDiv.style.display = 'block';
+
+        const today = new Date().toISOString().split('T')[0];
+
+        formDiv.innerHTML = `
+            <div style="padding:16px;display:flex;gap:16px;align-items:start">
+                <div class="book-cover-large ${thumb ? 'has-cover' : ''}" style="width:80px;height:120px;flex-shrink:0">
+                    ${thumb ? `<img src="${thumb}" alt="Cover">` : '📖'}
+                </div>
+                <div style="flex:1;min-width:0">
+                    <div style="font-size:18px;font-weight:700">${Views._esc(v.title || '')}</div>
+                    ${v.subtitle ? `<div style="font-size:14px;color:var(--text2);margin-top:2px">${Views._esc(v.subtitle)}</div>` : ''}
+                    <div style="font-size:14px;color:var(--text2);margin-top:4px">${Views._esc(authors)}</div>
+                    <div style="font-size:12px;color:var(--text3);margin-top:4px">${v.pageCount ? v.pageCount + ' pages · ' : ''}${Views._esc(v.publisher || '')}</div>
+                </div>
+            </div>
+
+            <div class="section-header">Reading Details</div>
+            <div class="form-section">
+                <div class="form-row">
+                    <label class="form-label">Format</label>
+                    <select class="form-select" id="add-format">
+                        ${FORMATS.map(f => `<option value="${f}">${f}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-row">
+                    <label class="form-label">Status</label>
+                    <select class="form-select" id="add-status">
+                        ${STATUSES.map(s => `<option value="${s}">${s}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-row">
+                    <label class="form-label">Started</label>
+                    <input class="form-input" id="add-started" type="date" value="${today}">
+                </div>
+                <div class="form-row">
+                    <label class="form-label">Finished</label>
+                    <input class="form-input" id="add-finished" type="date">
+                </div>
+            </div>
+
+            <div style="padding:16px;display:flex;gap:12px">
+                <button class="btn btn-secondary" id="add-back" style="flex:1">Back</button>
+                <button class="btn btn-primary" id="add-save" style="flex:2">Add to Library</button>
+            </div>
+        `;
+
+        formDiv.querySelector('#add-back').addEventListener('click', () => {
+            formDiv.style.display = 'none';
+            resultsDiv.style.display = 'block';
+            sheet.querySelector('.search-bar').style.display = 'block';
+        });
+
+        formDiv.querySelector('#add-save').addEventListener('click', () => {
+            const format = formDiv.querySelector('#add-format').value;
+            const status = formDiv.querySelector('#add-status').value;
+            const started = formDiv.querySelector('#add-started').value || null;
+            const finished = formDiv.querySelector('#add-finished').value || null;
+
+            const book = {
+                id: crypto.randomUUID(),
+                googleBooksID: item.id,
+                isbn13: isbn,
+                title: v.title || '',
+                subtitle: v.subtitle || '',
+                authors: authors,
+                pageCount: v.pageCount || 0,
+                publicationDate: v.publishedDate || '',
+                publisher: v.publisher || '',
+                description: v.description || '',
+                subjects: subjects,
+                languageCode: v.language || 'en',
+                startedReading: started,
+                paused: null,
+                finishedReading: finished,
+                didNotFinish: status === 'Did Not Finish',
+                currentPage: 0,
+                currentPercentage: 0,
+                rating: null,
+                notes: '',
+                lists: '',
+                format: format,
+                status: status
+            };
+
+            Store.add(book);
+            Covers.fetchAll([book]);
+            this._closeModal();
         });
     },
 
