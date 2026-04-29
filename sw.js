@@ -1,5 +1,4 @@
-const CACHE_NAME = 'reading-tracker-v1';
-const CACHE_NAME = 'reading-tracker-v2';
+const CACHE_NAME = 'reading-tracker-v3';
 const ASSETS = [
     './index.html',
     './css/style.css',
@@ -26,8 +25,20 @@ self.addEventListener('activate', e => {
     self.clients.claim();
 });
 
+// Network-first strategy: try network, fall back to cache (for offline support)
 self.addEventListener('fetch', e => {
+    // Skip non-GET and external requests
+    if (e.request.method !== 'GET') return;
+    if (!e.request.url.startsWith(self.location.origin)) return;
+
     e.respondWith(
-        caches.match(e.request).then(cached => cached || fetch(e.request))
+        fetch(e.request)
+            .then(response => {
+                // Update cache with fresh response
+                const clone = response.clone();
+                caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
+                return response;
+            })
+            .catch(() => caches.match(e.request))
     );
 });
