@@ -107,6 +107,7 @@ const App = {
         const bindBtn = (id, fn) => el.querySelector(id)?.addEventListener('click', fn);
         bindBtn('#btn-add', () => this._openModal('add'));
         bindBtn('#btn-import', () => this._openModal('import'));
+        bindBtn('#btn-export', () => CSVParser.downloadExport(Store.getAll()));
         bindBtn('#empty-add', () => this._openModal('add'));
         bindBtn('#empty-import', () => this._openModal('import'));
     },

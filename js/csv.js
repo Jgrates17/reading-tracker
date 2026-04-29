@@ -1,4 +1,12 @@
-// ── CSV Parser ──
+// ── CSV Parser & Exporter ──
+
+const CSV_HEADERS = [
+    'Reading List ID','Google Books ID','Apple Books ID','Open Library Edition ID',
+    'ISBN-13','Title','Subtitle','Authors','Page Count','Publication Date',
+    'Publisher','Description','Subjects','Language Code','Started Reading',
+    'Paused','Finished Reading','Did Not Finish','Current Page',
+    'Current Percentage','Rating','Notes','Lists'
+];
 
 const CSVParser = {
     parse(content) {
@@ -113,5 +121,64 @@ const CSVParser = {
         row.push(field);
         if (row.some(f => f !== '')) rows.push(row);
         return rows;
+    },
+
+    // ── Export ──
+
+    export(books) {
+        const rows = [CSV_HEADERS.join(',')];
+        for (const b of books) {
+            const fields = [
+                b.id || '',
+                b.googleBooksID || '',
+                '', // Apple Books ID
+                '', // Open Library Edition ID
+                b.isbn13 || '',
+                b.title || '',
+                b.subtitle || '',
+                b.authors || '',
+                b.pageCount || '',
+                b.publicationDate || '',
+                b.publisher || '',
+                b.description || '',
+                b.subjects || '',
+                b.languageCode || '',
+                b.startedReading || '',
+                b.paused || '',
+                b.finishedReading || '',
+                b.didNotFinish ? 'true' : '',
+                b.currentPage || '',
+                b.currentPercentage || '',
+                b.rating != null ? b.rating : '',
+                b.notes || '',
+                b.lists || ''
+            ];
+            rows.push(fields.map(f => this._csvField(String(f))).join(','));
+        }
+        return rows.join('\r\n');
+    },
+
+    _csvField(val) {
+        if (val.includes(',') || val.includes('"') || val.includes('\n') || val.includes('\r')) {
+            return '"' + val.replace(/"/g, '""') + '"';
+        }
+        return val;
+    },
+
+    downloadExport(books) {
+        const csv = this.export(books);
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const now = new Date();
+        const dateStr = now.toISOString().slice(0, 16).replace('T', ' ').replace(':', '-');
+        const filename = `Reading List_${dateStr}.csv`;
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
     }
 };
