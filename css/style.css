@@ -515,20 +515,58 @@ html, body {
 }
 .bar-muted { opacity: 0.4; }
 
-.stacked-chart { align-items: flex-end; }
-.stacked-bar {
-    width: 100%;
-    max-width: 28px;
+.stacked-chart { display: block; height: auto; }
+.format-year-table { width: 100%; }
+.fy-row {
     display: flex;
-    flex-direction: column-reverse;
-    min-height: 2px;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 0.5px solid var(--separator);
+    gap: 8px;
 }
-.stacked-segment {
-    width: 100%;
-    min-height: 2px;
-    transition: height 0.3s;
+.fy-row:last-child { border-bottom: none; }
+.fy-header {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text2);
+    padding-bottom: 8px;
 }
-.stacked-segment:last-child { border-radius: 4px 4px 0 0; }
+.fy-label {
+    width: 100px;
+    flex-shrink: 0;
+    font-size: 12px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.fy-cell {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+.fy-bar-wrap {
+    flex: 1;
+    height: 16px;
+    background: var(--separator);
+    border-radius: 4px;
+    overflow: hidden;
+}
+.fy-bar {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s;
+    min-width: 2px;
+}
+.fy-count {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    min-width: 16px;
+    text-align: right;
+}
 .bar-value {
     font-size: 9px;
     color: var(--text2);

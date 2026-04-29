@@ -257,29 +257,36 @@ const StatsView = {
         });
 
         const allFormats = [...new Set(yearData.flatMap(d => Object.keys(d.counts)))];
-        const max = Math.max(...yearData.map(d => d.total), 1);
+        const max = Math.max(...yearData.flatMap(d => Object.values(d.counts)), 1);
 
-        container.innerHTML = yearData.map(d => {
-            const segments = allFormats
-                .filter(f => d.counts[f])
-                .map(f => {
-                    const pct = (d.counts[f] / max) * 100;
-                    return `<div class="stacked-segment" style="height:${pct}%;background:${FORMAT_COLORS[f] || '#8e8e93'}" title="${f}: ${d.counts[f]}"></div>`;
-                }).join('');
-            return `
-                <div class="bar-col">
-                    ${d.total > 0 ? `<span class="bar-value">${d.total}</span>` : ''}
-                    <div class="stacked-bar">${segments}</div>
-                    <span class="bar-label">${d.year}</span>
-                </div>
-            `;
-        }).join('');
+        // Build a table-style layout: rows = formats, columns = years
+        let html = '<div class="format-year-table">';
 
-        legend.innerHTML = allFormats.map(f => `
-            <div class="legend-item">
-                <span class="legend-dot" style="background:${FORMAT_COLORS[f] || '#8e8e93'}"></span>
-                ${f}
-            </div>
-        `).join('');
+        // Header row with years
+        html += '<div class="fy-row fy-header"><div class="fy-label"></div>';
+        sorted.forEach(y => { html += `<div class="fy-cell">${y}</div>`; });
+        html += '</div>';
+
+        // One row per format
+        allFormats.forEach(fmt => {
+            const color = FORMAT_COLORS[fmt] || '#8e8e93';
+            html += `<div class="fy-row"><div class="fy-label"><span class="legend-dot" style="background:${color}"></span>${fmt}</div>`;
+            sorted.forEach(y => {
+                const d = yearData.find(d => d.year === y);
+                const count = d?.counts[fmt] || 0;
+                const pct = (count / max) * 100;
+                html += `<div class="fy-cell">
+                    <div class="fy-bar-wrap">
+                        <div class="fy-bar" style="width:${pct}%;background:${color}"></div>
+                    </div>
+                    <span class="fy-count">${count || ''}</span>
+                </div>`;
+            });
+            html += '</div>';
+        });
+
+        html += '</div>';
+        container.innerHTML = html;
+        legend.innerHTML = '';
     }
 };
