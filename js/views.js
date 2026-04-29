@@ -73,9 +73,16 @@ const Views = {
         const ratingHtml = book.rating != null ? `<span class="rating">★ ${book.rating.toFixed(1)}</span>` : '';
         const pagesHtml = book.pageCount > 0 ? `<span class="pages-label">${book.pageCount}p</span>` : '';
 
+        const coverKey = book.googleBooksID || book.isbn13 || '';
+        const coverUrl = Covers.getCoverUrl(book);
+        const coverContent = coverUrl
+            ? `<img src="${coverUrl}" alt="Cover" loading="lazy">`
+            : icon;
+        const coverClass = coverUrl ? 'book-icon has-cover' : `book-icon ${cls}`;
+
         return `
             <div class="book-row" data-id="${book.id}" role="button" tabindex="0" aria-label="${this._esc(book.title)} by ${this._esc(book.authors)}">
-                <div class="book-icon ${cls}">${icon}</div>
+                <div class="${coverClass}" data-cover-key="${this._esc(coverKey)}">${coverContent}</div>
                 <div class="book-info">
                     <div class="book-title">${this._esc(book.title)}</div>
                     <div class="book-author">${this._esc(book.authors)}</div>
@@ -106,13 +113,15 @@ const Views = {
                 <button class="nav-btn" id="btn-edit">Edit</button>
             </div>
             <div class="detail-header">
-                <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px">
-                    <span style="font-size:36px">${FORMAT_ICONS[book.format] || '📖'}</span>
-                    <span class="badge ${statusCls}" style="font-size:13px;padding:4px 12px">${book.status}</span>
+                <div style="display:flex;gap:16px;align-items:start;margin-bottom:12px">
+                    ${this._detailCover(book)}
+                    <div style="flex:1;min-width:0;padding-top:4px">
+                        <div class="detail-title">${this._esc(book.title)}</div>
+                        ${book.subtitle ? `<div class="detail-subtitle">${this._esc(book.subtitle)}</div>` : ''}
+                        <div class="detail-author">${this._esc(book.authors)}</div>
+                        <div style="margin-top:8px"><span class="badge ${statusCls}" style="font-size:13px;padding:4px 12px">${book.status}</span></div>
+                    </div>
                 </div>
-                <div class="detail-title">${this._esc(book.title)}</div>
-                ${book.subtitle ? `<div class="detail-subtitle">${this._esc(book.subtitle)}</div>` : ''}
-                <div class="detail-author">${this._esc(book.authors)}</div>
             </div>
 
             ${book.status === 'Reading' || book.status === 'Started' ? `
@@ -350,6 +359,16 @@ const Views = {
                 <button class="btn btn-primary" id="import-done" style="margin-top:16px">Done</button>
             </div>
         `;
+    },
+
+    _detailCover(book) {
+        const coverKey = book.googleBooksID || book.isbn13 || '';
+        const coverUrl = Covers.getCoverUrl(book);
+        const icon = FORMAT_ICONS[book.format] || '📖';
+        if (coverUrl) {
+            return `<div class="book-cover-large has-cover" data-cover-key="${this._esc(coverKey)}"><img src="${coverUrl}" alt="Cover of ${this._esc(book.title)}" loading="lazy"></div>`;
+        }
+        return `<div class="book-cover-large" data-cover-key="${this._esc(coverKey)}">${icon}</div>`;
     },
 
     _esc(str) {

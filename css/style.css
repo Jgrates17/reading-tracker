@@ -203,9 +203,9 @@ html, body {
 .book-row:active { background: var(--separator); }
 
 .book-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
+    width: 44px;
+    height: 64px;
+    border-radius: 6px;
     background: var(--accent);
     color: #fff;
     display: flex;
@@ -213,10 +213,41 @@ html, body {
     justify-content: center;
     flex-shrink: 0;
     font-size: 16px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+.book-icon.has-cover { background: transparent; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+.book-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
 }
 .book-icon.audio { background: var(--purple); }
 .book-icon.ebook, .book-icon.kindle { background: var(--orange); }
 .book-icon.library { background: var(--green); }
+
+.book-cover-large {
+    width: 120px;
+    height: 180px;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+    flex-shrink: 0;
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 36px;
+}
+.book-cover-large.has-cover { background: transparent; }
+.book-cover-large img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
 
 .book-info { flex: 1; min-width: 0; }
 .book-title {

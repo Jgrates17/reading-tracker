@@ -25,6 +25,9 @@ const App = {
         // Listen for store changes
         Store.onChange(() => this.refresh());
 
+        // Fetch covers for existing books
+        Covers.fetchAll(Store.getAll());
+
         // Initial render
         this.render();
     },
@@ -215,6 +218,7 @@ const App = {
                 Views.showImportPreview(sheet, parsedBooks);
                 sheet.querySelector('#btn-do-import')?.addEventListener('click', () => {
                     const count = Store.importBooks(parsedBooks);
+                    Covers.fetchAll(parsedBooks);
                     Views.showImportResult(sheet, count);
                     sheet.querySelector('#import-done')?.addEventListener('click', () => this._closeModal());
                 });

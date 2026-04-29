@@ -1,8 +1,10 @@
 const CACHE_NAME = 'reading-tracker-v1';
+const CACHE_NAME = 'reading-tracker-v2';
 const ASSETS = [
     './index.html',
     './css/style.css',
     './js/store.js',
+    './js/covers.js',
     './js/csv.js',
     './js/views.js',
     './js/stats.js',
