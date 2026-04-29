@@ -276,10 +276,7 @@ const StatsView = {
                 const count = d?.counts[fmt] || 0;
                 const pct = (count / max) * 100;
                 html += `<div class="fy-cell">
-                    <div class="fy-bar-wrap">
-                        <div class="fy-bar" style="width:${pct}%;background:${color}"></div>
-                    </div>
-                    <span class="fy-count">${count || ''}</span>
+                    <span class="fy-count" style="width:100%;text-align:center">${count || '—'}</span>
                 </div>`;
             });
             html += '</div>';
