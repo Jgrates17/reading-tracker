@@ -305,7 +305,7 @@ const App = {
         sheet.querySelector('.search-bar').style.display = 'none';
         formDiv.style.display = 'block';
 
-        const today = new Date().toISOString().split('T')[0];
+        const today = '';
 
         formDiv.innerHTML = `
             <div style="padding:16px;display:flex;gap:16px;align-items:start">
