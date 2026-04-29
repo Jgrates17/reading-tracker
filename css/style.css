@@ -531,6 +531,14 @@ html, body {
     color: var(--text2);
     padding-bottom: 8px;
 }
+.fy-header .fy-cell {
+    writing-mode: vertical-lr;
+    transform: rotate(180deg);
+    text-align: left;
+    height: 40px;
+    justify-content: flex-end;
+    font-size: 11px;
+}
 .fy-label {
     width: 100px;
     flex-shrink: 0;
