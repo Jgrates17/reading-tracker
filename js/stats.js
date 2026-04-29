@@ -146,8 +146,6 @@ const StatsView = {
         });
     },
 
-    // ── Data helpers ──
-
     _getAvailableYears() {
         const years = new Set();
         Store.getAll().forEach(b => {
@@ -162,44 +160,32 @@ const StatsView = {
         const y = this._selectedYear;
         const now = new Date();
         const isCurrentYear = y === now.getFullYear();
-
         if (period === 'year') {
-            const start = new Date(y, 0, 1);
-            const end = new Date(y, 11, 31, 23, 59, 59);
-            return Store.finished(start, end);
+            return Store.finished(new Date(y, 0, 1), new Date(y, 11, 31, 23, 59, 59));
         }
         if (period === 'quarter') {
-            const qMonth = isCurrentYear ? Math.floor(now.getMonth() / 3) * 3 : 9; // Q4 for past years
-            const start = new Date(y, qMonth, 1);
-            const end = new Date(y, qMonth + 3, 0, 23, 59, 59);
-            return Store.finished(start, end);
+            const qMonth = isCurrentYear ? Math.floor(now.getMonth() / 3) * 3 : 9;
+            return Store.finished(new Date(y, qMonth, 1), new Date(y, qMonth + 3, 0, 23, 59, 59));
         }
         if (period === 'month') {
-            const m = isCurrentYear ? now.getMonth() : 11; // December for past years
-            const start = new Date(y, m, 1);
-            const end = new Date(y, m + 1, 0, 23, 59, 59);
-            return Store.finished(start, end);
+            const m = isCurrentYear ? now.getMonth() : 11;
+            return Store.finished(new Date(y, m, 1), new Date(y, m + 1, 0, 23, 59, 59));
         }
         return [];
     },
-
-    // ── Charts ──
 
     _drawDonut(books) {
         const canvas = document.getElementById('format-chart');
         const legend = document.getElementById('format-legend');
         if (!canvas || !legend) return;
-
         const ctx = canvas.getContext('2d');
         const grouped = {};
         books.forEach(b => { grouped[b.format] = (grouped[b.format] || 0) + 1; });
         const entries = Object.entries(grouped).sort((a, b) => b[1] - a[1]);
         const total = books.length;
         const colors = ['#007aff', '#34c759', '#ff9500', '#af52de', '#ff3b30', '#5856d6'];
-
         const cx = 60, cy = 60, r = 50, inner = 30;
         let startAngle = -Math.PI / 2;
-
         entries.forEach(([fmt, count], i) => {
             const slice = (count / total) * Math.PI * 2;
             ctx.beginPath();
@@ -210,7 +196,6 @@ const StatsView = {
             ctx.fill();
             startAngle += slice;
         });
-
         legend.innerHTML = entries.map(([fmt, count], i) => `
             <div class="legend-item">
                 <span class="legend-dot" style="background:${colors[i % colors.length]}"></span>
@@ -222,17 +207,13 @@ const StatsView = {
     _drawMonthlyBars() {
         const container = document.getElementById('monthly-chart');
         if (!container) return;
-
         const y = this._selectedYear;
-        const start = new Date(y, 0, 1);
-        const end = new Date(y, 11, 31, 23, 59, 59);
-        const yearBooks = Store.finished(start, end);
+        const yearBooks = Store.finished(new Date(y, 0, 1), new Date(y, 11, 31, 23, 59, 59));
         const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
         const counts = months.map((_, i) =>
             yearBooks.filter(b => b.finishedReading && new Date(b.finishedReading).getMonth() === i).length
         );
         const max = Math.max(...counts, 1);
-
         container.innerHTML = months.map((m, i) => `
             <div class="bar-col">
                 ${counts[i] > 0 ? `<span class="bar-value">${counts[i]}</span>` : ''}
@@ -245,39 +226,10 @@ const StatsView = {
     _drawYearlyBars(years) {
         const container = document.getElementById('yearly-chart');
         if (!container) return;
-
-        const sortedYears = [...years].sort((a, b) => a - b);
-        const counts = sortedYears.map(y => {
-            const start = new Date(y, 0, 1);
-            const end = new Date(y, 11, 31, 23, 59, 59);
-            return Store.finished(start, end).length;
-        });
+        const sorted = [...years].sort((a, b) => a - b);
+        const counts = sorted.map(y => Store.finished(new Date(y, 0, 1), new Date(y, 11, 31, 23, 59, 59)).length);
         const max = Math.max(...counts, 1);
-
-        container.innerHTML = sortedYears.map((y, i) => `
-            <div class="bar-col">
-                ${counts[i] > 0 ? `<span class="bar-value">${counts[i]}</span>` : ''}
-                <div class="bar ${y === this._selectedYear ? '' : 'bar-muted'}" style="height:${(counts[i] / max) * 100}%"></div>
-                <span class="bar-label">${y}</span>
-            </div>
-        `).join('');
-    }
-};
-};
-
-    _drawYearlyBars(years) {
-        const container = document.getElementById('yearly-chart');
-        if (!container) return;
-
-        const sortedYears = [...years].sort((a, b) => a - b);
-        const counts = sortedYears.map(y => {
-            const start = new Date(y, 0, 1);
-            const end = new Date(y, 11, 31, 23, 59, 59);
-            return Store.finished(start, end).length;
-        });
-        const max = Math.max(...counts, 1);
-
-        container.innerHTML = sortedYears.map((y, i) => `
+        container.innerHTML = sorted.map((y, i) => `
             <div class="bar-col">
                 ${counts[i] > 0 ? `<span class="bar-value">${counts[i]}</span>` : ''}
                 <div class="bar ${y === this._selectedYear ? '' : 'bar-muted'}" style="height:${(counts[i] / max) * 100}%"></div>
@@ -292,26 +244,18 @@ const StatsView = {
         if (!container || !legend) return;
 
         const FORMAT_COLORS = {
-            'Physical': '#007aff',
-            'E-Book': '#ff9500',
-            'Audio': '#af52de',
-            'Kindle': '#ff3b30',
-            'Library E-Book': '#34c759'
+            'Physical': '#007aff', 'E-Book': '#ff9500', 'Audio': '#af52de',
+            'Kindle': '#ff3b30', 'Library E-Book': '#34c759'
         };
 
-        const sortedYears = [...years].sort((a, b) => a - b);
-
-        // Gather data: for each year, count per format
-        const yearData = sortedYears.map(y => {
-            const start = new Date(y, 0, 1);
-            const end = new Date(y, 11, 31, 23, 59, 59);
-            const books = Store.finished(start, end);
+        const sorted = [...years].sort((a, b) => a - b);
+        const yearData = sorted.map(y => {
+            const books = Store.finished(new Date(y, 0, 1), new Date(y, 11, 31, 23, 59, 59));
             const counts = {};
             books.forEach(b => { counts[b.format] = (counts[b.format] || 0) + 1; });
             return { year: y, counts, total: books.length };
         });
 
-        // Find all formats used across all years
         const allFormats = [...new Set(yearData.flatMap(d => Object.keys(d.counts)))];
         const max = Math.max(...yearData.map(d => d.total), 1);
 
@@ -322,7 +266,6 @@ const StatsView = {
                     const pct = (d.counts[f] / max) * 100;
                     return `<div class="stacked-segment" style="height:${pct}%;background:${FORMAT_COLORS[f] || '#8e8e93'}" title="${f}: ${d.counts[f]}"></div>`;
                 }).join('');
-
             return `
                 <div class="bar-col">
                     ${d.total > 0 ? `<span class="bar-value">${d.total}</span>` : ''}
