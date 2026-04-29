@@ -285,6 +285,14 @@ const StatsView = {
             html += '</div>';
         });
 
+        // Totals row
+        html += `<div class="fy-row fy-totals"><div class="fy-label" style="font-weight:700">Total</div>`;
+        sorted.forEach(y => {
+            const d = yearData.find(d => d.year === y);
+            html += `<div class="fy-cell"><span class="fy-count" style="font-weight:700;width:100%;text-align:center">${d?.total || 0}</span></div>`;
+        });
+        html += '</div>';
+
         html += '</div>';
         container.innerHTML = html;
         legend.innerHTML = '';
