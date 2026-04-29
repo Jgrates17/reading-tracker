@@ -514,6 +514,21 @@ html, body {
     margin-top: 4px;
 }
 .bar-muted { opacity: 0.4; }
+
+.stacked-chart { align-items: flex-end; }
+.stacked-bar {
+    width: 100%;
+    max-width: 28px;
+    display: flex;
+    flex-direction: column-reverse;
+    min-height: 2px;
+}
+.stacked-segment {
+    width: 100%;
+    min-height: 2px;
+    transition: height 0.3s;
+}
+.stacked-segment:last-child { border-radius: 4px 4px 0 0; }
 .bar-value {
     font-size: 9px;
     color: var(--text2);

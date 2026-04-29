@@ -125,6 +125,11 @@ const StatsView = {
                     <h3>Year-over-Year</h3>
                     <div class="bar-chart" id="yearly-chart"></div>
                 </div>
+                <div class="chart-container" style="margin-top:8px">
+                    <h3>Format by Year</h3>
+                    <div class="bar-chart stacked-chart" id="yearly-format-chart"></div>
+                    <div class="donut-legend" id="yearly-format-legend" style="margin-top:10px"></div>
+                </div>
             ` : ''}
             <div style="height:20px"></div>
         `;
@@ -134,7 +139,10 @@ const StatsView = {
                 this._drawDonut(periodBooks);
                 if (period === 'year') this._drawMonthlyBars();
             }
-            if (years.length > 1) this._drawYearlyBars(years);
+            if (years.length > 1) {
+                this._drawYearlyBars(years);
+                this._drawYearlyFormatBars(years);
+            }
         });
     },
 
@@ -251,6 +259,83 @@ const StatsView = {
                 ${counts[i] > 0 ? `<span class="bar-value">${counts[i]}</span>` : ''}
                 <div class="bar ${y === this._selectedYear ? '' : 'bar-muted'}" style="height:${(counts[i] / max) * 100}%"></div>
                 <span class="bar-label">${y}</span>
+            </div>
+        `).join('');
+    }
+};
+};
+
+    _drawYearlyBars(years) {
+        const container = document.getElementById('yearly-chart');
+        if (!container) return;
+
+        const sortedYears = [...years].sort((a, b) => a - b);
+        const counts = sortedYears.map(y => {
+            const start = new Date(y, 0, 1);
+            const end = new Date(y, 11, 31, 23, 59, 59);
+            return Store.finished(start, end).length;
+        });
+        const max = Math.max(...counts, 1);
+
+        container.innerHTML = sortedYears.map((y, i) => `
+            <div class="bar-col">
+                ${counts[i] > 0 ? `<span class="bar-value">${counts[i]}</span>` : ''}
+                <div class="bar ${y === this._selectedYear ? '' : 'bar-muted'}" style="height:${(counts[i] / max) * 100}%"></div>
+                <span class="bar-label">${y}</span>
+            </div>
+        `).join('');
+    },
+
+    _drawYearlyFormatBars(years) {
+        const container = document.getElementById('yearly-format-chart');
+        const legend = document.getElementById('yearly-format-legend');
+        if (!container || !legend) return;
+
+        const FORMAT_COLORS = {
+            'Physical': '#007aff',
+            'E-Book': '#ff9500',
+            'Audio': '#af52de',
+            'Kindle': '#ff3b30',
+            'Library E-Book': '#34c759'
+        };
+
+        const sortedYears = [...years].sort((a, b) => a - b);
+
+        // Gather data: for each year, count per format
+        const yearData = sortedYears.map(y => {
+            const start = new Date(y, 0, 1);
+            const end = new Date(y, 11, 31, 23, 59, 59);
+            const books = Store.finished(start, end);
+            const counts = {};
+            books.forEach(b => { counts[b.format] = (counts[b.format] || 0) + 1; });
+            return { year: y, counts, total: books.length };
+        });
+
+        // Find all formats used across all years
+        const allFormats = [...new Set(yearData.flatMap(d => Object.keys(d.counts)))];
+        const max = Math.max(...yearData.map(d => d.total), 1);
+
+        container.innerHTML = yearData.map(d => {
+            const segments = allFormats
+                .filter(f => d.counts[f])
+                .map(f => {
+                    const pct = (d.counts[f] / max) * 100;
+                    return `<div class="stacked-segment" style="height:${pct}%;background:${FORMAT_COLORS[f] || '#8e8e93'}" title="${f}: ${d.counts[f]}"></div>`;
+                }).join('');
+
+            return `
+                <div class="bar-col">
+                    ${d.total > 0 ? `<span class="bar-value">${d.total}</span>` : ''}
+                    <div class="stacked-bar">${segments}</div>
+                    <span class="bar-label">${d.year}</span>
+                </div>
+            `;
+        }).join('');
+
+        legend.innerHTML = allFormats.map(f => `
+            <div class="legend-item">
+                <span class="legend-dot" style="background:${FORMAT_COLORS[f] || '#8e8e93'}"></span>
+                ${f}
             </div>
         `).join('');
     }
